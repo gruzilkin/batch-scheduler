@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  queue:
+    image: rabbitmq:3.8.26-management
+    ports:
+      - 15672:15672
+    restart: always
+    logging:
+      driver: none
+
+  db:
+    build: ./db
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    tmpfs:
+      - /var/lib/postgresql/data
+    restart: always
+    logging:
+      driver: none
+
+  web:
+    build: ./web
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_HOST=queue
+      - DB_HOST=db
+    depends_on:
+      - queue
+      - db
+    restart: always
+    logging:
+      driver: none
+
+  scheduler:
+    build: ./scheduler
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_HOST=queue
+      - DB_HOST=db
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - queue
+      - db
+    restart: always
+
+  worker:
+    build: ./worker
+    env_file:
+      - .env
+    environment:
+      - RABBITMQ_HOST=queue
+      - DB_HOST=db
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - queue
+      - db
+    restart: always
+    deploy:
+      replicas: 2

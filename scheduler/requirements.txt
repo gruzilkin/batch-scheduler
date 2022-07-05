@@ -1,0 +1,3 @@
+aio_pika
+psycopg2
+debugpy==1.4.1
